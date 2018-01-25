@@ -26,20 +26,14 @@ DBHandler::~DBHandler()
     }
 }
 
-bool DBHandler::isOpen() const
+QSqlDatabase DBHandler::database() const
 {
-    return m_db.isOpen();
-}
-
-QString DBHandler::databaseName() const
-{
-    return m_db.databaseName();
+    return m_db;
 }
 
 bool DBHandler::saveClicsItem(const ClicsItem& item)
 {
     bool success = false;
-
 
     QSqlQuery queryAdd;
     queryAdd.prepare("REPLACE INTO clics (date, ian, activity, object) VALUES (:date, :ian, :activity, :object)");
@@ -59,4 +53,39 @@ bool DBHandler::saveClicsItem(const ClicsItem& item)
 
 
     return success;
+}
+
+QList<ClicsItem> DBHandler::getWeeklyClicsItems(const QDate& date) {
+    int dayofweek = date.dayOfWeek();
+    const QDate MondayDate = date.addDays(- (dayofweek - 1));
+    const QDate FridayDate = MondayDate.addDays(4);
+    QList<ClicsItem> result;
+
+    // Initialize result
+    for (int i = 0; i < 5; i++) {
+        result.insert(i, ClicsItem("-", "-", "-", "-"));
+    }
+
+    QSqlQuery querySelect;
+    querySelect.prepare("SELECT * FROM clics WHERE `date` >= date(:Monday) AND `date` <= date(:Friday)");
+    querySelect.bindValue(":Monday", MondayDate.toString("yyyy-MM-dd"));
+    querySelect.bindValue(":Friday", FridayDate.toString("yyyy-MM-dd"));
+
+    if(querySelect.exec())
+    {
+        while (querySelect.next()) {
+            QString date = querySelect.value(0).toString();
+            QString ian = querySelect.value(1).toString();
+            QString activity = querySelect.value(2).toString();
+            QString object = querySelect.value(3).toString();
+            int index = MondayDate.daysTo(QDate::fromString(date, "yyyy-MM-dd"));
+            result.replace(index, ClicsItem(date, ian, activity, object));
+        }
+    }
+    else
+    {
+        qDebug() << "select weekly clics items failed: " << querySelect.lastError();
+    }
+
+    return result;
 }

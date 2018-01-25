@@ -1,12 +1,7 @@
 #include "clicsitem.h"
 
-ClicsItem::ClicsItem(const QString &date, const QString &ian, const QString &activity, const QString &object)
-{
-    m_date = date;
-    m_ian = ian;
-    m_activity = activity;
-    m_object = object;
-}
+ClicsItem::ClicsItem(const QString &date, const QString &ian, const QString &activity, const QString &object):
+    m_date(date), m_ian(ian), m_activity(activity), m_object(object) {}
 
 QString ClicsItem::date() const
 {

@@ -1,6 +1,8 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "clicsitem.h"
+#include "greekholidays.h"
+#include <QTextCharFormat>
 #include <QDebug>
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -11,8 +13,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
     // Database connection
-    if (!m_dbh.isOpen()) {
-        ui->statusBar->showMessage("Could not open database file" + m_dbh.databaseName());
+    if (!m_dbh.database().isOpen()) {
+        ui->statusBar->showMessage("Could not open database file" + m_dbh.database().databaseName());
     } else {
         ui->statusBar->showMessage("Ready");
     }
@@ -29,13 +31,16 @@ MainWindow::MainWindow(QWidget *parent) :
     weekTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     weekTable->setShowGrid(false);
 
-    //insert data
-    weekTable->setItem(0, 0, new QTableWidgetItem("14-017\n4704 TBE0"));
-    weekTable->item(0,0)->setTextAlignment(Qt::AlignCenter);
+    // Configure calendar widget
+    ui->calendarWidget->selectionChanged();
+    setHolidays(ui->calendarWidget);
 
     // Configure dateEdit
     ui->dateFrom->setDate(QDate::currentDate());
     ui->dateUntil->setDate(QDate::currentDate());
+    setHolidays(ui->dateFrom->calendarWidget());
+    setHolidays(ui->dateUntil->calendarWidget());
+    connect(ui->dateFrom->calendarWidget(), &QCalendarWidget::currentPageChanged, this, &MainWindow::on_dateFrom_currentPageChanged);
 
     // Configure comboBox
     QStringList m_IAN;
@@ -51,9 +56,37 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_btnSave_clicked()
 {
-    // TODO: Validation check
-    ClicsItem item(ui->dateFrom->date().toString("yyyy-MM-dd"),ui->cmbIAN->currentText(), ui->cmbActivity->currentText(), ui->cmbObject->currentText());
-    m_dbh.saveClicsItem(item);
+    // Validation check
+    if (ui->cmbIAN->currentText() == "" || ui->cmbActivity->currentText() == "" || ui->cmbObject->currentText() == "") {
+        ui->statusBar->showMessage("Please fill IAN Activity and Object");
+        return;
+    }
+
+    // Store in Sqlite database
+    bool successFlag = true;
+    QDate from = ui->dateFrom->date();
+    QDate until = ui->dateUntil->date();
+    while (from <= until) {
+        if (from.dayOfWeek() != Qt::Saturday && from.dayOfWeek() != Qt::Sunday) {
+            ClicsItem item(from.toString("yyyy-MM-dd"),ui->cmbIAN->currentText(), ui->cmbActivity->currentText(), ui->cmbObject->currentText());
+            successFlag = m_dbh.saveClicsItem(item) && successFlag;
+        }
+        from = from.addDays(1);
+    }
+
+    if (successFlag) {
+        ui->statusBar->showMessage("Clics items saved successfully.");
+    } else {
+        ui->statusBar->showMessage("Some items failed to saved in database please try again.");
+    }
+
+    // Clear form
+    ui->cmbIAN->clearEditText();
+    ui->cmbActivity->clearEditText();
+    ui->cmbObject->clearEditText();
+    ui->dateFrom->setDate(QDate::currentDate());
+    ui->dateUntil->setDate(QDate::currentDate());
+    ui->calendarWidget->selectionChanged();
 }
 
 void MainWindow::on_cmbIAN_currentTextChanged(const QString &arg1)
@@ -82,5 +115,75 @@ void MainWindow::on_cmbActivity_currentTextChanged(const QString &arg1)
 
     if (arg1 == "4704"){
         ui->cmbObject->insertItem(0, "TBE0");
+    }
+}
+
+void MainWindow::on_calendarWidget_selectionChanged()
+{
+    QTableWidget* weekTable;
+    weekTable = ui->tableWidget;
+    QList<ClicsItem> items = m_dbh.getWeeklyClicsItems(ui->calendarWidget->selectedDate());
+    int column = 0;
+
+    for (ClicsItem item: items) {
+        QString data;
+        if (item.date() == "-") {
+            data = "-";
+        } else {
+            data = item.ian() + "\n" + item.activity() + "-" + item.object();
+        }
+        //insert data into table
+        weekTable->setItem(0, column, new QTableWidgetItem(data));
+        weekTable->item(0, column)->setTextAlignment(Qt::AlignCenter);
+        column++;
+    }
+
+    ui->statusBar->showMessage("Ready");
+}
+
+void MainWindow::on_calendarWidget_currentPageChanged(int year)
+{
+    if (year != QDate::currentDate().year()) {
+        setHolidays(ui->calendarWidget, year);
+    }
+}
+
+void MainWindow::on_dateFrom_currentPageChanged(int year)
+{
+    if (year != QDate::currentDate().year()) {
+        setHolidays(ui->dateFrom->calendarWidget(), year);
+    }
+}
+
+void MainWindow::on_dateUntil_currentPageChanged(int year)
+{
+    if (year != QDate::currentDate().year()) {
+        setHolidays(ui->dateUntil->calendarWidget(), year);
+    }
+}
+
+void MainWindow::setHolidays(QCalendarWidget* calendar, int year)
+{
+    QTextCharFormat format = calendar->weekdayTextFormat(Qt::Saturday);
+
+    QList<QDate> holidays = GreekHolidays::getHolidays(year);
+    for (QDate h: holidays) {
+        calendar->setDateTextFormat(h, format);
+    }
+}
+
+void MainWindow::on_dateFrom_dateChanged(const QDate &date)
+{
+    QDate until = ui->dateUntil->date();
+    if (date > until) {
+        ui->dateUntil->setDate(date);
+    }
+}
+
+void MainWindow::on_dateUntil_dateChanged(const QDate &date)
+{
+    QDate from = ui->dateFrom->date();
+    if (date < from) {
+        ui->dateFrom->setDate(date);
     }
 }

@@ -3,6 +3,7 @@
 
 #include "clicsitem.h"
 #include <QSqlDatabase>
+#include <QDate>
 
 class DBHandler
 {
@@ -10,9 +11,9 @@ public:
     DBHandler(const QString& path);
     ~DBHandler();
 
-    bool isOpen() const;
     bool saveClicsItem(const ClicsItem &item);
-    QString databaseName() const;
+    QList<ClicsItem> getWeeklyClicsItems(const QDate& date);
+    QSqlDatabase database() const;
 private:
     QSqlDatabase m_db;
 };

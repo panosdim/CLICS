@@ -4,6 +4,7 @@
 #include "dbhandler.h"
 #include <QMainWindow>
 #include <QTableWidget>
+#include <QCalendarWidget>
 
 namespace Ui {
 class MainWindow;
@@ -21,10 +22,18 @@ private slots:
     void on_btnSave_clicked();
     void on_cmbIAN_currentTextChanged(const QString &arg1);
     void on_cmbActivity_currentTextChanged(const QString &arg1);
+    void on_calendarWidget_selectionChanged();
+    void on_calendarWidget_currentPageChanged(int year);
+    void on_dateFrom_currentPageChanged(int year);
+    void on_dateUntil_currentPageChanged(int year);
+    void on_dateFrom_dateChanged(const QDate &date);
+
+    void on_dateUntil_dateChanged(const QDate &date);
 
 private:
     Ui::MainWindow *ui;
     DBHandler m_dbh;
+    void setHolidays(QCalendarWidget *calendar, int year = QDate::currentDate().year());
 };
 
 #endif // MAINWINDOW_H

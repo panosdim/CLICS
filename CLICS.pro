@@ -27,18 +27,23 @@ SOURCES += \
         main.cpp \
         mainwindow.cpp \
     dbhandler.cpp \
-    clicsitem.cpp
+    clicsitem.cpp \
+    greekholidays.cpp
 
 HEADERS += \
         mainwindow.h \
     dbhandler.h \
-    clicsitem.h
+    clicsitem.h \
+    greekholidays.h
 
 FORMS += \
         mainwindow.ui
 
 DISTFILES += \
-    clics.db3
+    clics.db3 \
+    clics.ico
+
+RC_ICONS = clics.ico
 
 win32 {
     PWD_WIN = $${PWD}
