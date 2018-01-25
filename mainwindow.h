@@ -27,8 +27,9 @@ private slots:
     void on_dateFrom_currentPageChanged(int year);
     void on_dateUntil_currentPageChanged(int year);
     void on_dateFrom_dateChanged(const QDate &date);
-
     void on_dateUntil_dateChanged(const QDate &date);
+    void showReady(const QString &message);
+    void on_btnClear_clicked();
 
 private:
     Ui::MainWindow *ui;
