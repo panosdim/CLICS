@@ -41,7 +41,9 @@ FORMS += \
 
 DISTFILES += \
     clics.db3 \
-    clics.ico
+    clics.ico \
+    README.md \
+    LICENSE
 
 RC_ICONS = clics.ico
 
