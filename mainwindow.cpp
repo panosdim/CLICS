@@ -162,6 +162,9 @@ void MainWindow::on_calendarWidget_selectionChanged()
         weekTable->item(0, column)->setTextAlignment(Qt::AlignCenter);
         column++;
     }
+
+    ui->dateFrom->setDate(ui->calendarWidget->selectedDate());
+    ui->dateUntil->setDate(ui->calendarWidget->selectedDate());
 }
 
 void MainWindow::on_calendarWidget_currentPageChanged(int year)
