@@ -43,11 +43,10 @@ MainWindow::MainWindow(QWidget *parent) :
     setHolidays(ui->calendarWidget);
 
     // Configure dateEdit
-    ui->dateFrom->setDate(QDate::currentDate());
-    ui->dateUntil->setDate(QDate::currentDate());
     setHolidays(ui->dateFrom->calendarWidget());
     setHolidays(ui->dateUntil->calendarWidget());
     connect(ui->dateFrom->calendarWidget(), &QCalendarWidget::currentPageChanged, this, &MainWindow::on_dateFrom_currentPageChanged);
+    connect(ui->dateUntil->calendarWidget(), &QCalendarWidget::currentPageChanged, this, &MainWindow::on_dateUntil_currentPageChanged);
 
     // Configure comboBox
     QStringList m_IAN;
@@ -95,8 +94,6 @@ void MainWindow::on_btnSave_clicked()
     ui->cmbIAN->clearEditText();
     ui->cmbActivity->clearEditText();
     ui->cmbObject->clearEditText();
-    ui->dateFrom->setDate(QDate::currentDate());
-    ui->dateUntil->setDate(QDate::currentDate());
     ui->calendarWidget->selectionChanged();
 }
 
@@ -147,7 +144,8 @@ void MainWindow::on_calendarWidget_selectionChanged()
 {
     QTableWidget* weekTable;
     weekTable = ui->tableWidget;
-    QList<ClicsItem> items = m_dbh.getWeeklyClicsItems(ui->calendarWidget->selectedDate());
+    QDate date = ui->calendarWidget->selectedDate();
+    QList<ClicsItem> items = m_dbh.getWeeklyClicsItems(date);
     int column = 0;
 
     for (ClicsItem item: items) {
@@ -163,8 +161,38 @@ void MainWindow::on_calendarWidget_selectionChanged()
         column++;
     }
 
-    ui->dateFrom->setDate(ui->calendarWidget->selectedDate());
-    ui->dateUntil->setDate(ui->calendarWidget->selectedDate());
+    // Color as selected whole week
+    int dayofweek = date.dayOfWeek();
+    const QDate MondayDate = date.addDays(- (dayofweek - 1));
+    const QDate FridayDate = MondayDate.addDays(4);
+
+    QBrush brush;
+    QColor color = QColor("dodgerblue");
+    brush.setColor( color );
+    QTextCharFormat cf = ui->calendarWidget->dateTextFormat( date );
+    cf.setBackground( brush );
+    QDate iter = MondayDate;
+    while (iter <= FridayDate) {
+        ui->calendarWidget->setDateTextFormat( iter, cf );
+        iter = iter.addDays(1);
+    }
+
+    // Clear previous Selection
+    if (!m_Monday.isNull() && m_Monday != MondayDate) {
+         brush.setColor( Qt::white );
+         cf.setBackground( brush );
+         QDate iter = m_Monday;
+         while (iter <= m_Friday) {
+             ui->calendarWidget->setDateTextFormat( iter, cf );
+             iter = iter.addDays(1);
+         }
+    }
+
+    m_Monday = MondayDate;
+    m_Friday = FridayDate;
+
+    ui->dateFrom->setDate(MondayDate);
+    ui->dateUntil->setDate(FridayDate);
 }
 
 void MainWindow::on_calendarWidget_currentPageChanged(int year)
@@ -200,18 +228,15 @@ void MainWindow::setHolidays(QCalendarWidget* calendar, int year)
 
 void MainWindow::on_dateFrom_dateChanged(const QDate &date)
 {
-    QDate until = ui->dateUntil->date();
-    if (date > until) {
-        ui->dateUntil->setDate(date);
-    }
+    ui->dateUntil->setMinimumDate(date);
 }
 
 void MainWindow::on_dateUntil_dateChanged(const QDate &date)
 {
-    QDate from = ui->dateFrom->date();
-    if (date < from) {
-        ui->dateFrom->setDate(date);
-    }
+    ui->dateFrom->setMaximumDate(date);
+    // Needed to Fix wierd bug that dateFrom date is set
+    // to previous week Friday instead of Monday
+    ui->dateFrom->setDate(m_Monday);
 }
 
 void MainWindow::showReady(const QString &message)
@@ -227,8 +252,6 @@ void MainWindow::on_btnClear_clicked()
     ui->cmbIAN->clearEditText();
     ui->cmbActivity->clearEditText();
     ui->cmbObject->clearEditText();
-    ui->dateFrom->setDate(QDate::currentDate());
-    ui->dateUntil->setDate(QDate::currentDate());
     ui->calendarWidget->selectionChanged();
     ui->statusBar->showMessage("Ready");
 }

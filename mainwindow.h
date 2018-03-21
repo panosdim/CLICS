@@ -34,6 +34,8 @@ private slots:
 private:
     Ui::MainWindow *ui;
     DBHandler m_dbh;
+    QDate m_Monday;
+    QDate m_Friday;
     void setHolidays(QCalendarWidget *calendar, int year = QDate::currentDate().year());
 };
 
