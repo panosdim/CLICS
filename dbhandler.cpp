@@ -89,3 +89,82 @@ QList<ClicsItem> DBHandler::getWeeklyClicsItems(const QDate& date) {
 
     return result;
 }
+
+QStringList DBHandler::getIanCodes() {
+    QStringList result;
+    QSqlQuery querySelect;
+
+    querySelect.prepare("SELECT DISTINCT ian FROM codes");
+    if(querySelect.exec())
+    {
+        while (querySelect.next()) {
+            result << querySelect.value(0).toString();
+        }
+    }
+    else
+    {
+        qDebug() << "get ian codes failed: " << querySelect.lastError();
+    }
+
+     return result;
+}
+
+QStringList DBHandler::getActivityCodes(const QString ian) {
+    QStringList result;
+    QSqlQuery querySelect;
+
+    querySelect.prepare("SELECT activity FROM codes  WHERE `ian` == :IAN");
+    querySelect.bindValue(":IAN", ian);
+    if(querySelect.exec())
+    {
+        while (querySelect.next()) {
+            result << querySelect.value(0).toString();
+        }
+    }
+    else
+    {
+        qDebug() << "get activity codes failed: " << querySelect.lastError();
+    }
+
+     return result;
+}
+
+QStringList  DBHandler::getObjectCodes(const QString activity) {
+    QStringList result;
+    QSqlQuery querySelect;
+
+    querySelect.prepare("SELECT object FROM codes  WHERE `activity` == :ACTIVITY");
+    querySelect.bindValue(":ACTIVITY", activity);
+    if(querySelect.exec())
+    {
+        while (querySelect.next()) {
+            result << querySelect.value(0).toString();
+        }
+    }
+    else
+    {
+        qDebug() << "get activity codes failed: " << querySelect.lastError();
+    }
+
+     return result;
+}
+
+QString  DBHandler::getDesc(const QString object) {
+    QString result;
+    QSqlQuery querySelect;
+
+    querySelect.prepare("SELECT desc FROM codes  WHERE `object` == :OBJECT");
+    querySelect.bindValue(":OBJECT", object);
+    if(querySelect.exec())
+    {
+        while (querySelect.next()) {
+            result = querySelect.value(0).toString();
+        }
+    }
+    else
+    {
+        qDebug() << "get activity codes failed: " << querySelect.lastError();
+    }
+
+     return result;
+}

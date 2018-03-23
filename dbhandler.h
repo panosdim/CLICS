@@ -14,6 +14,10 @@ public:
     bool saveClicsItem(const ClicsItem &item);
     QList<ClicsItem> getWeeklyClicsItems(const QDate& date);
     QSqlDatabase database() const;
+    QStringList getIanCodes();
+    QStringList getActivityCodes(const QString ian);
+    QStringList getObjectCodes(const QString activity);
+    QString getDesc(const QString object);
 private:
     QSqlDatabase m_db;
 };

@@ -22,6 +22,7 @@ private slots:
     void on_btnSave_clicked();
     void on_cmbIAN_currentTextChanged(const QString &arg1);
     void on_cmbActivity_currentTextChanged(const QString &arg1);
+    void on_cmbObject_currentTextChanged(const QString &arg1);
     void on_calendarWidget_selectionChanged();
     void on_calendarWidget_currentPageChanged(int year);
     void on_dateFrom_currentPageChanged(int year);

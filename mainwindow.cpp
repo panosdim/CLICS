@@ -48,10 +48,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->dateFrom->calendarWidget(), &QCalendarWidget::currentPageChanged, this, &MainWindow::on_dateFrom_currentPageChanged);
     connect(ui->dateUntil->calendarWidget(), &QCalendarWidget::currentPageChanged, this, &MainWindow::on_dateUntil_currentPageChanged);
 
-    // Configure comboBox
-    QStringList m_IAN;
-    m_IAN<<"04-001"<<"14-017";
-    ui->cmbIAN->insertItems(0, m_IAN);
+    // Configure ian comboBox
+    ui->cmbIAN->insertItems(0, m_dbh.getIanCodes());
     ui->cmbIAN->setCurrentText("");
 
     // Configure Status Bar
@@ -100,44 +98,18 @@ void MainWindow::on_btnSave_clicked()
 void MainWindow::on_cmbIAN_currentTextChanged(const QString &arg1)
 {
     ui->cmbActivity->clear();
-    if (arg1 == "04-001"){
-        ui->cmbActivity->insertItem(0, "9007");
-        ui->cmbActivity->insertItem(1, "9008");
-        ui->cmbActivity->insertItem(2, "9010");
-        ui->cmbActivity->insertItem(3, "9013");
-    }
-
-    if (arg1 == "14-017"){
-        ui->cmbActivity->insertItem(0, "4704");
-    }
+    ui->cmbActivity->insertItems(0, m_dbh.getActivityCodes(arg1));
 }
 
 void MainWindow::on_cmbActivity_currentTextChanged(const QString &arg1)
 {
     ui->cmbObject->clear();
-    if (arg1 == "9007"){
-        ui->cmbObject->insertItem(0, "0007");
-        ui->statusBar->showMessage("Annual Leave");
-    }
+    ui->cmbObject->insertItems(0, m_dbh.getObjectCodes(arg1));
+}
 
-    if (arg1 == "9008"){
-        ui->cmbObject->insertItem(0, "0008");
-        ui->statusBar->showMessage("Sick Leave");
-    }
-
-    if (arg1 == "9010"){
-        ui->cmbObject->insertItem(0, "0010");
-        ui->statusBar->showMessage("Bank Holiday");
-    }
-
-    if (arg1 == "9013"){
-        ui->cmbObject->insertItem(0, "0013");
-        ui->statusBar->showMessage("Parental Leave");
-    }
-
-    if (arg1 == "4704"){
-        ui->cmbObject->insertItem(0, "TBE0");
-    }
+void MainWindow::on_cmbObject_currentTextChanged(const QString &arg1)
+{
+    ui->statusBar->showMessage(m_dbh.getDesc(arg1));
 }
 
 void MainWindow::on_calendarWidget_selectionChanged()
