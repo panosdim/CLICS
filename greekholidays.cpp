@@ -1,8 +1,5 @@
 #include "greekholidays.h"
 
-namespace GreekHolidays
-{
-namespace {
 QDate getOrthodoxEaster(int year) {
     QDate oed;
 
@@ -25,7 +22,15 @@ QDate getOrthodoxEaster(int year) {
     }
     return oed;
 }
+
+namespace GreekHolidays
+{
+bool isHoliday(QDate date) {
+    int year = date.year();
+    QList<QDate> holidays = getHolidays(year);
+    return holidays.contains(date);
 }
+
 QList<QDate> getHolidays(int year) {
     QList<QDate> holidays;
     QDate newYearEve = QDate(year, 1, 1);

@@ -90,6 +90,54 @@ QList<ClicsItem> DBHandler::getWeeklyClicsItems(const QDate& date) {
     return result;
 }
 
+QList<QDate> DBHandler::getSickLeaves(QDate date) {
+    QList<QDate> result;
+    QSqlQuery querySelect;
+    const QDate startMonth = date.addDays(1 - date.day());
+    const QDate endMonth = date.addDays(date.daysInMonth() - date.day());
+
+    querySelect.prepare("SELECT `date` FROM clics WHERE `date` >= date(:startMonth) AND `date` <= date(:endMonth) AND `object` == '0008'");
+    querySelect.bindValue(":startMonth", startMonth.toString("yyyy-MM-dd"));
+    querySelect.bindValue(":endMonth", endMonth.toString("yyyy-MM-dd"));
+
+    if(querySelect.exec())
+    {
+        while (querySelect.next()) {
+            result.append(QDate::fromString(querySelect.value(0).toString(), "yyyy-MM-dd"));
+        }
+    }
+    else
+    {
+        qDebug() << "get sick leaves items failed: " << querySelect.lastError();
+    }
+
+    return result;
+}
+
+QList<QDate> DBHandler::getAnnualLeaves(QDate date) {
+    QList<QDate> result;
+    QSqlQuery querySelect;
+    const QDate startMonth = date.addDays(1 - date.day());
+    const QDate endMonth = date.addDays(date.daysInMonth() - date.day());
+
+    querySelect.prepare("SELECT `date` FROM clics WHERE `date` >= date(:startMonth) AND `date` <= date(:endMonth) AND `object` == '0007'");
+    querySelect.bindValue(":startMonth", startMonth.toString("yyyy-MM-dd"));
+    querySelect.bindValue(":endMonth", endMonth.toString("yyyy-MM-dd"));
+
+    if(querySelect.exec())
+    {
+        while (querySelect.next()) {
+            result.append(QDate::fromString(querySelect.value(0).toString(), "yyyy-MM-dd"));
+        }
+    }
+    else
+    {
+        qDebug() << "get annual leaves items failed: " << querySelect.lastError();
+    }
+
+    return result;
+}
+
 QStringList DBHandler::getIanCodes() {
     QStringList result;
     QSqlQuery querySelect;

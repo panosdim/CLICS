@@ -6,5 +6,6 @@
 namespace GreekHolidays
 {
 QList<QDate> getHolidays(int year);
+bool isHoliday(QDate date);
 }
 #endif // GREEKHOLIDAYS_H

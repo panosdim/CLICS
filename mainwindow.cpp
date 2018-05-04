@@ -117,6 +117,8 @@ void MainWindow::on_calendarWidget_selectionChanged()
     QTableWidget* weekTable;
     weekTable = ui->tableWidget;
     QDate date = ui->calendarWidget->selectedDate();
+    QList<QDate> annual_leaves;
+    QList<QDate> sick_leaves;
     QList<ClicsItem> items = m_dbh.getWeeklyClicsItems(date);
     int column = 0;
 
@@ -126,6 +128,12 @@ void MainWindow::on_calendarWidget_selectionChanged()
             data = "-";
         } else {
             data = item.ian() + "\n" + item.activity() + "-" + item.object();
+            if (m_dbh.getDesc(item.object()) == "Sick Leave") {
+                sick_leaves.append(QDate::fromString(item.date(), "yyyy-MM-dd"));
+            }
+            if (m_dbh.getDesc(item.object()) == "Annual Leave") {
+                annual_leaves.append(QDate::fromString(item.date(), "yyyy-MM-dd"));
+            }
         }
         //insert data into table
         weekTable->setItem(0, column, new QTableWidgetItem(data));
@@ -138,26 +146,32 @@ void MainWindow::on_calendarWidget_selectionChanged()
     const QDate MondayDate = date.addDays(- (dayofweek - 1));
     const QDate FridayDate = MondayDate.addDays(4);
 
-    QBrush brush;
-    QColor color = QColor("dodgerblue");
-    brush.setColor( color );
+    // Set brush for selection
+    QBrush selBrush;
+    selBrush.setColor(QColor("dodgerblue"));
     QTextCharFormat cf = ui->calendarWidget->dateTextFormat( date );
-    cf.setBackground( brush );
+    cf.setBackground( selBrush );
+    cf.setForeground(QBrush(Qt::black));
     QDate iter = MondayDate;
     while (iter <= FridayDate) {
-        ui->calendarWidget->setDateTextFormat( iter, cf );
+        if (!GreekHolidays::isHoliday(iter)) {
+            ui->calendarWidget->setDateTextFormat( iter, cf );
+        }
         iter = iter.addDays(1);
     }
 
     // Clear previous Selection
+    QBrush clearBrush;
+    clearBrush.setColor(Qt::white);
     if (!m_Monday.isNull() && m_Monday != MondayDate) {
-         brush.setColor( Qt::white );
-         cf.setBackground( brush );
-         QDate iter = m_Monday;
-         while (iter <= m_Friday) {
-             ui->calendarWidget->setDateTextFormat( iter, cf );
-             iter = iter.addDays(1);
-         }
+        cf.setBackground( clearBrush );
+        QDate iter = m_Monday;
+        while (iter <= m_Friday) {
+            if (!GreekHolidays::isHoliday(iter)) {
+                ui->calendarWidget->setDateTextFormat( iter, cf );
+            }
+            iter = iter.addDays(1);
+        }
     }
 
     m_Monday = MondayDate;
@@ -165,13 +179,18 @@ void MainWindow::on_calendarWidget_selectionChanged()
 
     ui->dateFrom->setDate(MondayDate);
     ui->dateUntil->setDate(FridayDate);
+
+    setSickLeaves(ui->calendarWidget, date);
+    setAnnualLeaves(ui->calendarWidget, date);
 }
 
-void MainWindow::on_calendarWidget_currentPageChanged(int year)
+void MainWindow::on_calendarWidget_currentPageChanged(int year, int month)
 {
     if (year != QDate::currentDate().year()) {
         setHolidays(ui->calendarWidget, year);
     }
+    setSickLeaves(ui->calendarWidget, QDate(year, month, 1));
+    setAnnualLeaves(ui->calendarWidget, QDate(year, month, 1));
 }
 
 void MainWindow::on_dateFrom_currentPageChanged(int year)
@@ -195,6 +214,30 @@ void MainWindow::setHolidays(QCalendarWidget* calendar, int year)
     QList<QDate> holidays = GreekHolidays::getHolidays(year);
     for (QDate h: holidays) {
         calendar->setDateTextFormat(h, format);
+    }
+}
+
+void MainWindow::setSickLeaves(QCalendarWidget* calendar, QDate date)
+{
+    QTextCharFormat format = calendar->weekdayTextFormat(Qt::Saturday);
+    format.setBackground(QBrush(Qt::red));
+    format.setForeground(QBrush(Qt::black));
+
+    QList<QDate> sickLeaves = m_dbh.getSickLeaves(date);
+    for (QDate s: sickLeaves) {
+        calendar->setDateTextFormat(s, format);
+    }
+}
+
+void MainWindow::setAnnualLeaves(QCalendarWidget* calendar, QDate date)
+{
+    QTextCharFormat format = calendar->weekdayTextFormat(Qt::Saturday);
+    format.setBackground(QBrush(Qt::green));
+    format.setForeground(QBrush(Qt::black));
+
+    QList<QDate> annualLeaves = m_dbh.getAnnualLeaves(date);
+    for (QDate a: annualLeaves) {
+        calendar->setDateTextFormat(a, format);
     }
 }
 

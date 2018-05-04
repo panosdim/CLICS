@@ -24,7 +24,7 @@ private slots:
     void on_cmbActivity_currentTextChanged(const QString &arg1);
     void on_cmbObject_currentTextChanged(const QString &arg1);
     void on_calendarWidget_selectionChanged();
-    void on_calendarWidget_currentPageChanged(int year);
+    void on_calendarWidget_currentPageChanged(int year, int month);
     void on_dateFrom_currentPageChanged(int year);
     void on_dateUntil_currentPageChanged(int year);
     void on_dateFrom_dateChanged(const QDate &date);
@@ -38,6 +38,8 @@ private:
     QDate m_Monday;
     QDate m_Friday;
     void setHolidays(QCalendarWidget *calendar, int year = QDate::currentDate().year());
+    void setSickLeaves(QCalendarWidget *calendar, QDate date = QDate::currentDate());
+    void setAnnualLeaves(QCalendarWidget *calendar, QDate date = QDate::currentDate());
 };
 
 #endif // MAINWINDOW_H

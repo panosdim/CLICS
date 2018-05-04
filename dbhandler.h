@@ -13,6 +13,8 @@ public:
 
     bool saveClicsItem(const ClicsItem &item);
     QList<ClicsItem> getWeeklyClicsItems(const QDate& date);
+    QList<QDate> getSickLeaves(QDate date);
+    QList<QDate> getAnnualLeaves(QDate date);
     QSqlDatabase database() const;
     QStringList getIanCodes();
     QStringList getActivityCodes(const QString ian);
