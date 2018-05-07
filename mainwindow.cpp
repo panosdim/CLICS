@@ -117,71 +117,78 @@ void MainWindow::on_calendarWidget_selectionChanged()
     QTableWidget* weekTable;
     weekTable = ui->tableWidget;
     QDate date = ui->calendarWidget->selectedDate();
-    QList<QDate> annual_leaves;
-    QList<QDate> sick_leaves;
-    QList<ClicsItem> items = m_dbh.getWeeklyClicsItems(date);
-    int column = 0;
-
-    for (ClicsItem item: items) {
-        QString data;
-        if (item.date() == "-") {
-            data = "-";
-        } else {
-            data = item.ian() + "\n" + item.activity() + "-" + item.object();
-            if (m_dbh.getDesc(item.object()) == "Sick Leave") {
-                sick_leaves.append(QDate::fromString(item.date(), "yyyy-MM-dd"));
-            }
-            if (m_dbh.getDesc(item.object()) == "Annual Leave") {
-                annual_leaves.append(QDate::fromString(item.date(), "yyyy-MM-dd"));
-            }
-        }
-        //insert data into table
-        weekTable->setItem(0, column, new QTableWidgetItem(data));
-        weekTable->item(0, column)->setTextAlignment(Qt::AlignCenter);
-        column++;
-    }
-
-    // Color as selected whole week
     int dayofweek = date.dayOfWeek();
     const QDate MondayDate = date.addDays(- (dayofweek - 1));
     const QDate FridayDate = MondayDate.addDays(4);
 
-    // Set brush for selection
-    QBrush selBrush;
-    selBrush.setColor(QColor("dodgerblue"));
-    QTextCharFormat cf = ui->calendarWidget->dateTextFormat( date );
-    cf.setBackground( selBrush );
-    cf.setForeground(QBrush(Qt::black));
-    QDate iter = MondayDate;
-    while (iter <= FridayDate) {
-        if (!GreekHolidays::isHoliday(iter)) {
-            ui->calendarWidget->setDateTextFormat( iter, cf );
-        }
-        iter = iter.addDays(1);
-    }
+    // Check if we change week
+    if (m_Monday.isNull() || (!m_Monday.isNull() && m_Monday != MondayDate)) {
 
-    // Clear previous Selection
-    QBrush clearBrush;
-    clearBrush.setColor(Qt::white);
-    if (!m_Monday.isNull() && m_Monday != MondayDate) {
-        cf.setBackground( clearBrush );
-        QDate iter = m_Monday;
-        while (iter <= m_Friday) {
+        QList<ClicsItem> items = m_dbh.getWeeklyClicsItems(date);
+        int column = 0;
+
+        for (ClicsItem item: items) {
+            QString data;
+            if (item.date() == "-") {
+                data = "-";
+            } else {
+                data = item.ian() + "\n" + item.activity() + "-" + item.object();
+            }
+            //insert data into table
+            weekTable->setItem(0, column, new QTableWidgetItem(data));
+            weekTable->item(0, column)->setTextAlignment(Qt::AlignCenter);
+            column++;
+        }
+
+        // Color as selected whole week
+        // Set brush for selection
+        QBrush selBrush;
+        selBrush.setColor(QColor("dodgerblue"));
+        QTextCharFormat cf = ui->calendarWidget->dateTextFormat( date );
+        cf.setBackground( selBrush );
+        cf.setForeground(QBrush(Qt::black));
+        QDate iter = MondayDate;
+        while (iter <= FridayDate) {
             if (!GreekHolidays::isHoliday(iter)) {
                 ui->calendarWidget->setDateTextFormat( iter, cf );
             }
             iter = iter.addDays(1);
         }
+
+        // Clear previous Selection
+        QBrush clearBrush;
+        clearBrush.setColor(Qt::white);
+        if (!m_Monday.isNull()) {
+            cf.setBackground( clearBrush );
+            QDate iter = m_Monday;
+            while (iter <= m_Friday) {
+                if (!GreekHolidays::isHoliday(iter)) {
+                    ui->calendarWidget->setDateTextFormat( iter, cf );
+                }
+                iter = iter.addDays(1);
+            }
+        }
+
+        m_Monday = MondayDate;
+        m_Friday = FridayDate;
+
+        // Reset Maximum and Minimum Date so the setDate method
+        // is between accepted range.
+        ui->dateFrom->setMaximumDate(QDate(1900, 1, 1));
+        ui->dateUntil->setMinimumDate(QDate(3000, 1, 1));
+        ui->dateFrom->setDate(MondayDate);
+        ui->dateUntil->setDate(FridayDate);
+
+        setSickLeaves(ui->calendarWidget, date);
+        setAnnualLeaves(ui->calendarWidget, date);
+    } else {
+        // Reset Maximum and Minimum Date so the setDate method
+        // is between accepted range.
+        ui->dateFrom->setMaximumDate(QDate(1900, 1, 1));
+        ui->dateUntil->setMinimumDate(QDate(3000, 1, 1));
+        ui->dateFrom->setDate(date);
+        ui->dateUntil->setDate(date);
     }
-
-    m_Monday = MondayDate;
-    m_Friday = FridayDate;
-
-    ui->dateFrom->setDate(MondayDate);
-    ui->dateUntil->setDate(FridayDate);
-
-    setSickLeaves(ui->calendarWidget, date);
-    setAnnualLeaves(ui->calendarWidget, date);
 }
 
 void MainWindow::on_calendarWidget_currentPageChanged(int year, int month)
@@ -249,9 +256,6 @@ void MainWindow::on_dateFrom_dateChanged(const QDate &date)
 void MainWindow::on_dateUntil_dateChanged(const QDate &date)
 {
     ui->dateFrom->setMaximumDate(date);
-    // Needed to Fix wierd bug that dateFrom date is set
-    // to previous week Friday instead of Monday
-    ui->dateFrom->setDate(m_Monday);
 }
 
 void MainWindow::showReady(const QString &message)
