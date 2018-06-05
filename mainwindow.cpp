@@ -89,6 +89,7 @@ void MainWindow::on_btnSave_clicked()
     }
 
     // Clear form
+    m_Monday = QDate();
     ui->cmbIAN->clearEditText();
     ui->cmbActivity->clearEditText();
     ui->cmbObject->clearEditText();
