@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include "dbhandler.h"
+#include "webdav.h"
 #include <QMainWindow>
 #include <QTableWidget>
 #include <QCalendarWidget>
@@ -31,12 +32,18 @@ private slots:
     void on_dateUntil_dateChanged(const QDate &date);
     void showReady(const QString &message);
     void on_btnClear_clicked();
+    void DBSyncFinished();
+
+public slots:
+    void closing();
 
 private:
     Ui::MainWindow *ui;
     DBHandler m_dbh;
+    WebDAV m_webdav;
     QDate m_Monday;
     QDate m_Friday;
+    bool m_SyncNeeded;
     void setHolidays(QCalendarWidget *calendar, int year = QDate::currentDate().year());
     void setSickLeaves(QCalendarWidget *calendar, QDate date = QDate::currentDate());
     void setAnnualLeaves(QCalendarWidget *calendar, QDate date = QDate::currentDate());

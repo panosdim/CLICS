@@ -8,53 +8,18 @@
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
-    m_dbh(QCoreApplication::applicationDirPath() + "/clics.db3")
+    m_dbh(QCoreApplication::applicationDirPath() + "/clics.db3"),
+    m_webdav(parent),
+    m_SyncNeeded(false)
 {
     ui->setupUi(this);
 
-    // Database connection
-    if (!m_dbh.database().isOpen()) {
-        ui->statusBar->showMessage("Could not open database file " + m_dbh.database().databaseName());
-        ui->btnSave->setEnabled(false);
-        ui->btnClear->setEnabled(false);
-        ui->cmbIAN->setEnabled(false);
-        ui->cmbActivity->setEnabled(false);
-        ui->cmbObject->setEnabled(false);
-        ui->dateFrom->setEnabled(false);
-        ui->dateUntil->setEnabled(false);
-        ui->calendarWidget->setEnabled(false);
-        return;
-    }
+    // Synchronize DB
+    m_dbh.database().close();
+    m_webdav.getRemoteDB();
 
-    // Configure table
-    QTableWidget* weekTable;
-    QStringList tableHeader;
-    weekTable = ui->tableWidget;
-    weekTable->setRowCount(1);
-    weekTable->setColumnCount(5);
-    tableHeader<<"Monday"<<"Tuesday"<<"Wednesday"<<"Thursday"<<"Friday";
-    weekTable->setHorizontalHeaderLabels(tableHeader);
-    weekTable->verticalHeader()->setVisible(false);
-    weekTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    weekTable->setShowGrid(false);
-
-    // Configure calendar widget
-    ui->calendarWidget->selectionChanged();
-    setHolidays(ui->calendarWidget);
-
-    // Configure dateEdit
-    setHolidays(ui->dateFrom->calendarWidget());
-    setHolidays(ui->dateUntil->calendarWidget());
-    connect(ui->dateFrom->calendarWidget(), &QCalendarWidget::currentPageChanged, this, &MainWindow::on_dateFrom_currentPageChanged);
-    connect(ui->dateUntil->calendarWidget(), &QCalendarWidget::currentPageChanged, this, &MainWindow::on_dateUntil_currentPageChanged);
-
-    // Configure ian comboBox
-    ui->cmbIAN->insertItems(0, m_dbh.getIanCodes());
-    ui->cmbIAN->setCurrentText("");
-
-    // Configure Status Bar
-    connect(ui->statusBar, &QStatusBar::messageChanged, this, &MainWindow::showReady);
-    ui->statusBar->showMessage("Ready");
+    connect(&m_webdav, &WebDAV::syncFinished,
+            this, &MainWindow::DBSyncFinished);
 }
 
 MainWindow::~MainWindow()
@@ -84,6 +49,7 @@ void MainWindow::on_btnSave_clicked()
 
     if (successFlag) {
         ui->statusBar->showMessage("Clics items saved successfully.", 4000);
+        m_SyncNeeded = true;
     } else {
         ui->statusBar->showMessage("Some items failed to saved in database please try again.");
     }
@@ -274,4 +240,62 @@ void MainWindow::on_btnClear_clicked()
     ui->cmbObject->clearEditText();
     ui->calendarWidget->selectionChanged();
     ui->statusBar->showMessage("Ready");
+}
+
+void MainWindow::DBSyncFinished()
+{
+    m_dbh.database().open();
+    // Database connection
+    if (!m_dbh.database().isOpen()) {
+        ui->statusBar->showMessage("Could not open database file " + m_dbh.database().databaseName());
+        ui->btnSave->setEnabled(false);
+        ui->btnClear->setEnabled(false);
+        ui->cmbIAN->setEnabled(false);
+        ui->cmbActivity->setEnabled(false);
+        ui->cmbObject->setEnabled(false);
+        ui->dateFrom->setEnabled(false);
+        ui->dateUntil->setEnabled(false);
+        ui->calendarWidget->setEnabled(false);
+        return;
+    }
+
+    // Configure table
+    QTableWidget* weekTable;
+    QStringList tableHeader;
+    weekTable = ui->tableWidget;
+    weekTable->setRowCount(1);
+    weekTable->setColumnCount(5);
+    tableHeader<<"Monday"<<"Tuesday"<<"Wednesday"<<"Thursday"<<"Friday";
+    weekTable->setHorizontalHeaderLabels(tableHeader);
+    weekTable->verticalHeader()->setVisible(false);
+    weekTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    weekTable->setShowGrid(false);
+
+    // Configure calendar widget
+    ui->calendarWidget->selectionChanged();
+    setHolidays(ui->calendarWidget);
+
+    // Configure dateEdit
+    setHolidays(ui->dateFrom->calendarWidget());
+    setHolidays(ui->dateUntil->calendarWidget());
+    connect(ui->dateFrom->calendarWidget(), &QCalendarWidget::currentPageChanged, this, &MainWindow::on_dateFrom_currentPageChanged);
+    connect(ui->dateUntil->calendarWidget(), &QCalendarWidget::currentPageChanged, this, &MainWindow::on_dateUntil_currentPageChanged);
+
+    // Configure ian comboBox
+    ui->cmbIAN->insertItems(0, m_dbh.getIanCodes());
+    ui->cmbIAN->setCurrentText("");
+
+    // Configure Status Bar
+    connect(ui->statusBar, &QStatusBar::messageChanged, this, &MainWindow::showReady);
+    ui->statusBar->showMessage("Ready");
+}
+
+void MainWindow::closing()
+{
+    if (m_SyncNeeded) {
+        m_webdav.storeRemoteDB();
+        QEventLoop eventLoop;
+        connect(&m_webdav, &WebDAV::storeFinished, &eventLoop, &QEventLoop::quit);
+        eventLoop.exec();
+    }
 }

@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui sql
+QT       += core gui sql network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -22,7 +22,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
-VERSION = 3.1
+VERSION = 4.0
 QMAKE_TARGET_DESCRIPTION = Track your work activities
 QMAKE_TARGET_COPYRIGHT = Panagiotis Dimopoulos
 
@@ -32,16 +32,19 @@ SOURCES += \
         mainwindow.cpp \
     dbhandler.cpp \
     clicsitem.cpp \
-    greekholidays.cpp
+    greekholidays.cpp \
+    webdav.cpp
 
 HEADERS += \
         mainwindow.h \
     dbhandler.h \
     clicsitem.h \
-    greekholidays.h
+    greekholidays.h \
+    webdav.h
 
 FORMS += \
-        mainwindow.ui
+        mainwindow.ui \
+    authenticationdialog.ui
 
 DISTFILES += \
     clics.db3 \
